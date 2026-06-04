@@ -1,7 +1,7 @@
 /**
  * Pre-warp source image onto projector canvas using a source-rect → projector-quad mapping.
  */
-import PerspT from 'perspective-transform';
+import { applyHomographyCoeffs, homographyFrom4Points } from '$lib/calibration/homography';
 import type { FineTuneSettings, Point } from '$lib/types';
 import { applyFineTuneToPoint } from '$lib/projection/fineTune';
 
@@ -11,16 +11,6 @@ export type WarpOptions = {
 	projCorners: Point[];
 	fineTune?: FineTuneSettings;
 };
-
-function applyMatrix(coeffs: number[], p: Point): Point {
-	const [h11, h12, h13, h21, h22, h23, h31, h32] = coeffs;
-	const denom = h31 * p.x + h32 * p.y + 1;
-	if (Math.abs(denom) < 1e-10) return { x: -1, y: -1 };
-	return {
-		x: (h11 * p.x + h12 * p.y + h13) / denom,
-		y: (h21 * p.x + h22 * p.y + h23) / denom
-	};
-}
 
 function bilinearSample(
 	data: Uint8ClampedArray,
@@ -167,14 +157,12 @@ export function warpToProjector(options: WarpOptions): void {
 		adjustedSrc = srcCorners.map((p) => applyFineTuneToPoint(p, fineTune, sourceSize));
 	}
 
-	const projToSrc = PerspT(
-		projCorners.flatMap((p) => [p.x, p.y]),
-		adjustedSrc.flatMap((p) => [p.x, p.y])
-	);
+	const H = homographyFrom4Points(projCorners, adjustedSrc);
+	if (!H) return;
 
 	for (let y = 0; y < oh; y++) {
 		for (let x = 0; x < ow; x++) {
-			const sp = applyMatrix(projToSrc.coeffs, { x, y });
+			const sp = applyHomographyCoeffs(H, { x, y });
 			const oi = (y * ow + x) * 4;
 			if (sp.x >= 0 && sp.x < sw - 1 && sp.y >= 0 && sp.y < sh - 1) {
 				const [r, g, b, a] = bilinearSample(srcData.data, sw, sh, sp.x, sp.y);

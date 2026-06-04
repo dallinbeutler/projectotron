@@ -61,6 +61,6 @@ Homography assumes a **planar** surface. The calibration plane should match the 
 
 - SvelteKit + Svelte 5 runes + Tailwind CSS
 - AprilTag WASM ([apriltag-js-standalone](https://github.com/arenaxr/apriltag-js-standalone))
-- `perspective-transform` for homography
+- In-house DLT homography (`src/lib/calibration/homography.ts`)
 - `pdfjs-dist` for PDF patterns
 - Trystero + `qrcode` for session sync and join links

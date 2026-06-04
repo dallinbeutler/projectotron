@@ -8,6 +8,7 @@
 	import { getPdfPageCount, renderPdfPage } from '$lib/media/pdf';
 	import { warpToProjectorFast } from '$lib/projection/warp';
 	import {
+		ensureSyncRoom,
 		loadCalibrationFromText,
 		pushFineTune,
 		sessionState,
@@ -29,7 +30,11 @@
 	let showControls = $state(true);
 
 	onMount(() => {
-		if (!sessionState.code) goto(`${base}/`);
+		if (!sessionState.code) {
+			goto(`${base}/`);
+			return;
+		}
+		void ensureSyncRoom();
 		if (sessionState.fineTune) fineTune = { ...sessionState.fineTune };
 	});
 

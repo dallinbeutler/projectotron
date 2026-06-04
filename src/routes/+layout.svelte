@@ -4,7 +4,7 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
-	import { restoreSession, sessionState } from '$lib/session.svelte';
+	import { restoreSessionCode, sessionState } from '$lib/session.svelte';
 
 	let { children } = $props();
 
@@ -13,9 +13,7 @@
 		const isCameraJoin =
 			page.url.pathname.includes('/camera') && page.url.searchParams.has('session');
 		if (!isCameraJoin) {
-			restoreSession()?.catch(() => {
-				/* ignore restore failures */
-			});
+			restoreSessionCode();
 		}
 	});
 </script>

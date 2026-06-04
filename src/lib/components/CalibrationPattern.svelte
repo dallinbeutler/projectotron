@@ -1,12 +1,7 @@
 <script lang="ts">
-	import {
-		CALIBRATION_MARKERS,
-		markerCenterPx,
-		projectorSize,
-		tagImageUrl,
-		tagSizePx
-	} from '$lib/calibration/pattern';
+	import { CALIBRATION_MARKERS, markerCenterPx, projectorSize, tagSizePx } from '$lib/calibration/pattern';
 	import SessionQr from '$lib/components/SessionQr.svelte';
+	import TagMarker from '$lib/components/TagMarker.svelte';
 
 	let {
 		sessionCode = '',
@@ -34,15 +29,11 @@
 <div class="fixed inset-0 bg-black">
 	{#each CALIBRATION_MARKERS as marker (marker.id)}
 		{@const center = markerCenterPx(marker, width, height)}
-		<img
-			src={tagImageUrl(marker.id)}
-			alt="AprilTag {marker.id}"
-			class="absolute select-none"
-			style:left="{center.x - tagSize / 2}px"
-			style:top="{center.y - tagSize / 2}px"
-			style:width="{tagSize}px"
-			style:height="{tagSize}px"
-			draggable="false"
+		<TagMarker
+			id={marker.id}
+			sizePx={tagSize}
+			left={center.x - tagSize / 2}
+			top={center.y - tagSize / 2}
 		/>
 	{/each}
 

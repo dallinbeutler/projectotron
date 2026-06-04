@@ -1,12 +1,16 @@
 <script lang="ts">
 	import { base } from '$app/paths';
 	import CalibrationPattern from '$lib/components/CalibrationPattern.svelte';
-	import { sessionState } from '$lib/session.svelte';
+	import { ensureSyncRoom, sessionState } from '$lib/session.svelte';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 
 	onMount(() => {
-		if (!sessionState.code) goto(`${base}/`);
+		if (!sessionState.code) {
+			goto(`${base}/`);
+			return;
+		}
+		void ensureSyncRoom();
 	});
 </script>
 

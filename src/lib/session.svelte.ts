@@ -8,19 +8,11 @@ import {
 	storeSession,
 	clearStoredSession
 } from '$lib/gun/session';
-import {
-	joinSyncRoom,
-	leaveSyncRoom,
-	peerCount,
-	publishCalibrationSync,
-	publishFineTuneSync,
-	type SyncRoom
-} from '$lib/sync/room';
 
 export type AppSession = {
 	code: string;
 	role: SessionRole;
-	syncRoom: SyncRoom | null;
+	syncRoom: import('$lib/sync/room').SyncRoom | null;
 	connected: boolean;
 	peerCount: number;
 	calibration: CalibrationData | null;
@@ -41,10 +33,54 @@ function createSessionState(): AppSession {
 
 export const sessionState = $state<AppSession>(createSessionState());
 
-function updateConnectionState(): void {
-	const count = peerCount(sessionState.syncRoom?.room ?? null);
-	sessionState.peerCount = count;
-	sessionState.connected = count > 0;
+async function getSyncModule() {
+	return import('$lib/sync/room');
+}
+
+async function refreshPeerCount(): Promise<void> {
+	if (!sessionState.syncRoom) {
+		sessionState.peerCount = 0;
+		sessionState.connected = false;
+		return;
+	}
+	const { peerCount } = await getSyncModule();
+	sessionState.peerCount = peerCount(sessionState.syncRoom.room);
+	sessionState.connected = sessionState.peerCount > 0;
+}
+
+/** Restore session code from storage without opening a sync room (avoids P2P on every page). */
+export function restoreSessionCode(): void {
+	const stored = getStoredSession();
+	if (!stored) return;
+	sessionState.code = stored.code;
+	sessionState.role = stored.role;
+}
+
+/** Open Trystero room for the current session (idempotent). */
+export async function ensureSyncRoom(): Promise<void> {
+	if (!browser || !sessionState.code || sessionState.syncRoom) return;
+
+	const { joinSyncRoom } = await getSyncModule();
+
+	if (sessionState.syncRoom) return;
+
+	const syncRoom = joinSyncRoom(sessionState.code, {
+		onCalibration: (data) => {
+			sessionState.calibration = data;
+		},
+		onFineTune: (data) => {
+			sessionState.fineTune = data;
+		},
+		onPeerJoin: () => {
+			void refreshPeerCount();
+		},
+		onPeerLeave: () => {
+			void refreshPeerCount();
+		}
+	});
+
+	sessionState.syncRoom = syncRoom;
+	await refreshPeerCount();
 }
 
 export async function joinSession(code: string, role: SessionRole): Promise<void> {
@@ -52,24 +88,11 @@ export async function joinSession(code: string, role: SessionRole): Promise<void
 	await leaveSession();
 
 	const normalized = code.toUpperCase();
-	const syncRoom = joinSyncRoom(normalized, {
-		onCalibration: (data) => {
-			sessionState.calibration = data;
-		},
-		onFineTune: (data) => {
-			sessionState.fineTune = data;
-		},
-		onPeerJoin: () => updateConnectionState(),
-		onPeerLeave: () => updateConnectionState()
-	});
-
 	sessionState.code = normalized;
 	sessionState.role = role;
-	sessionState.syncRoom = syncRoom;
 	storeSession(normalized, role);
 
-	// Room is active immediately; peers appear when the other device joins
-	updateConnectionState();
+	await ensureSyncRoom();
 }
 
 export function createAndJoin(role: SessionRole = 'projector'): Promise<void> {
@@ -77,31 +100,32 @@ export function createAndJoin(role: SessionRole = 'projector'): Promise<void> {
 	return joinSession(code, role);
 }
 
-export function leaveSession(): void {
-	leaveSyncRoom();
+export async function leaveSession(): Promise<void> {
+	if (sessionState.syncRoom) {
+		const { leaveSyncRoom } = await getSyncModule();
+		leaveSyncRoom();
+	}
 	clearStoredSession();
 	Object.assign(sessionState, createSessionState());
 }
 
 export async function pushCalibration(data: CalibrationData): Promise<void> {
+	await ensureSyncRoom();
 	if (!sessionState.syncRoom || !sessionState.code) {
 		sessionState.calibration = data;
 		return;
 	}
+	const { publishCalibrationSync } = await getSyncModule();
 	publishCalibrationSync(data);
 	sessionState.calibration = data;
 }
 
 export async function pushFineTune(settings: FineTuneSettings): Promise<void> {
+	await ensureSyncRoom();
 	if (!sessionState.syncRoom || !sessionState.code) return;
+	const { publishFineTuneSync } = await getSyncModule();
 	publishFineTuneSync(settings);
 	sessionState.fineTune = settings;
-}
-
-export function restoreSession(): Promise<void> | null {
-	const stored = getStoredSession();
-	if (!stored) return null;
-	return joinSession(stored.code, stored.role);
 }
 
 export function downloadCalibration(data: CalibrationData): void {

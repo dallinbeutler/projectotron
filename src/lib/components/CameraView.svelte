@@ -8,7 +8,7 @@
 	import { getMarkerById, markerCenterPx, projectorSize } from '$lib/calibration/pattern';
 	import { solveFromMarkers } from '$lib/calibration/solve';
 	import type { CalibrationData, MarkerObservation } from '$lib/types';
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 
 	let {
 		onCalibrated,
@@ -37,17 +37,28 @@
 
 		async function start() {
 			try {
-				await getAprilTagDetector();
-				loading = false;
+				await tick();
+				if (!videoEl) {
+					error = 'Camera view failed to initialize';
+					loading = false;
+					return;
+				}
 
+				const detectorPromise = getAprilTagDetector();
 				stream = await navigator.mediaDevices.getUserMedia({
 					audio: false,
-					video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
+					video: {
+						facingMode: { ideal: 'environment' },
+						width: { ideal: 1280 },
+						height: { ideal: 720 }
+					}
 				});
 
-				if (!videoEl) return;
 				videoEl.srcObject = stream;
 				await videoEl.play();
+
+				await detectorPromise;
+				loading = false;
 				loop();
 			} catch (e) {
 				error = e instanceof Error ? e.message : 'Camera access denied';
@@ -153,7 +164,7 @@
 <div class="relative h-full w-full overflow-hidden bg-black">
 	{#if loading}
 		<div class="absolute inset-0 flex items-center justify-center text-zinc-400">
-			Loading AprilTag detector…
+			Starting camera…
 		</div>
 	{/if}
 	{#if error}
