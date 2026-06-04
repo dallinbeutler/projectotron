@@ -49,7 +49,7 @@ Set `BASE_PATH=/YourRepoName` for GitHub Pages project sites (configured in CI).
 
 ## Usage
 
-1. **Projector**: Create session → open **Calibration** fullscreen (QR shown in corner).
+1. **Projector**: Open the site (calibration screen). Hide UI overlays while scanning. QR and session info sit in the black gutters between tags.
 2. **Phone**: Scan QR on projector → opens **Camera**, point at tags until locked.
 3. **Projector**: Open **Reprojection**, upload pattern, adjust reference rect or zoom, go fullscreen.
 

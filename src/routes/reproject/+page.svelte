@@ -138,7 +138,7 @@
 					Load
 				</button>
 			</details>
-			<a href="{base}/" class="mt-6 inline-block text-sm text-zinc-500 hover:text-zinc-300">← Home</a>
+			<a href="{base}/" class="mt-6 inline-block text-sm text-zinc-500 hover:text-zinc-300">← Calibration</a>
 		</div>
 	{:else}
 		<div class="relative flex-1 bg-black">
@@ -193,7 +193,7 @@
 						>
 							{fullscreen ? 'Exit fullscreen' : 'Fullscreen project'}
 						</button>
-						<a href="{base}/" class="text-center text-xs text-zinc-500 hover:text-zinc-300">← Home</a>
+						<a href="{base}/" class="text-center text-xs text-zinc-500 hover:text-zinc-300">← Calibration</a>
 					</div>
 				</aside>
 			{:else}

@@ -29,7 +29,8 @@
 			if (fromQr) {
 				await joinSession(fromQr, 'phone');
 			} else if (!sessionState.code) {
-				goto(`${base}/`);
+				joinError = 'Scan the QR code on the projector calibration screen to join.';
+				ready = true;
 				return;
 			}
 			ready = true;
@@ -76,7 +77,7 @@
 			<h1 class="text-xl font-semibold">Camera calibration</h1>
 			<p class="text-sm text-zinc-500">Point at the projector calibration screen.</p>
 		</div>
-		<a href="{base}/" class="text-sm text-zinc-400 hover:text-zinc-200">← Home</a>
+		<a href="{base}/" class="text-sm text-zinc-400 hover:text-zinc-200">← Calibration</a>
 	</div>
 
 	{#if joinError}

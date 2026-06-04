@@ -1,15 +1,21 @@
 <script lang="ts">
 	import { CALIBRATION_MARKERS, markerCenterPx, projectorSize, tagSizePx } from '$lib/calibration/pattern';
-	import SessionQr from '$lib/components/SessionQr.svelte';
+	import CalibrationChrome from '$lib/components/CalibrationChrome.svelte';
 	import TagMarker from '$lib/components/TagMarker.svelte';
 
 	let {
 		sessionCode = '',
-		calibrated = false
-	}: { sessionCode?: string; calibrated?: boolean } = $props();
+		calibrated = false,
+		onToggleHelp
+	}: {
+		sessionCode?: string;
+		calibrated?: boolean;
+		onToggleHelp?: () => void;
+	} = $props();
 
 	let width = $state(1920);
 	let height = $state(1080);
+	let showOverlays = $state(true);
 
 	$effect(() => {
 		if (typeof window === 'undefined') return;
@@ -37,20 +43,10 @@
 		/>
 	{/each}
 
-	{#if sessionCode}
-		<div class="absolute top-4 right-4">
-			<SessionQr sessionCode={sessionCode} size={Math.min(200, tagSize * 2.5)} />
-		</div>
-	{/if}
-
-	<div class="absolute top-4 left-4 rounded-lg bg-zinc-900/80 px-4 py-2 font-mono text-sm text-zinc-300">
-		{#if sessionCode}
-			<span class="text-zinc-500">Session </span>{sessionCode}
-		{/if}
-		{#if calibrated}
-			<span class="ml-3 text-emerald-400">Calibrated</span>
-		{:else}
-			<span class="ml-3 text-amber-400">Scan QR to connect phone…</span>
-		{/if}
-	</div>
+	<CalibrationChrome
+		{sessionCode}
+		{calibrated}
+		bind:showOverlays
+		{onToggleHelp}
+	/>
 </div>
