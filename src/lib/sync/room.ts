@@ -43,7 +43,13 @@ export function joinSyncRoom(
 	};
 
 	layoutAction.onMessage = (data) => {
-		if (data?.width && data?.height && typeof data.margin === 'number') {
+		if (
+			typeof data?.width === 'number' &&
+			data.width > 0 &&
+			typeof data?.height === 'number' &&
+			data.height > 0 &&
+			typeof data.margin === 'number'
+		) {
 			handlers.onProjectorLayout?.(data);
 		}
 	};

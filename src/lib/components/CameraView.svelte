@@ -5,7 +5,7 @@
 		getAprilTagDetector,
 		type AprilTagDetection
 	} from '$lib/calibration/detect';
-	import { getMarkerById, markerCenterPx } from '$lib/calibration/pattern';
+	import { CALIBRATION_MARKERS, getMarkerById, markerCenterPx } from '$lib/calibration/pattern';
 	import { solveFromMarkers } from '$lib/calibration/solve';
 	import { sessionState } from '$lib/session.svelte';
 	import type { CalibrationData, MarkerObservation } from '$lib/types';
@@ -19,22 +19,21 @@
 		onDetections?: (count: number, locked: boolean) => void;
 	} = $props();
 
+	const TAG_COUNT = CALIBRATION_MARKERS.length;
+	const STABLE_FRAMES = 8;
+
 	let videoEl: HTMLVideoElement | undefined = $state();
 	let overlayEl: HTMLCanvasElement | undefined = $state();
 	let loading = $state(true);
 	let error = $state('');
-	let detections = $state<AprilTagDetection[]>([]);
+	let matchedCount = $state(0);
 	let locked = $state(false);
 	let stableCount = $state(0);
 
-	const STABLE_FRAMES = 8;
-	const MIN_MARKERS = 4;
+	const canCalibrate = $derived(!!sessionState.projectorLayout);
 
 	onMount(() => {
 		let stream: MediaStream | null = null;
-		let raf = 0;
-		let lastDetect = 0;
-		let lastMarkers: MarkerObservation[] = [];
 
 		async function start() {
 			try {
@@ -57,15 +56,27 @@
 
 				videoEl.srcObject = stream;
 				await videoEl.play();
-
 				await detectorPromise;
 				loading = false;
-				loop();
 			} catch (e) {
 				error = e instanceof Error ? e.message : 'Camera access denied';
 				loading = false;
 			}
 		}
+
+		start();
+
+		return () => {
+			stream?.getTracks().forEach((t) => t.stop());
+		};
+	});
+
+	$effect(() => {
+		if (loading || !videoEl || !overlayEl) return;
+
+		let raf = 0;
+		let lastDetect = 0;
+		let lastMarkerIds: number[] = [];
 
 		async function detectFrame() {
 			if (!videoEl || !overlayEl || locked) return;
@@ -87,20 +98,17 @@
 			const imageData = octx.getImageData(0, 0, vw, vh);
 			const { gray, width, height, scale } = frameToGrayscale(imageData);
 			const detector = await getAprilTagDetector();
-			const found = detector.detect(gray, width, height);
-			detections = found;
+			const found: AprilTagDetection[] = detector.detect(gray, width, height);
 
-			const layout = sessionState.projectorLayout;
+			const currentLayout = sessionState.projectorLayout;
 			const markers: MarkerObservation[] = [];
 
 			for (const det of found) {
-				octx.strokeStyle = layout ? '#22c55e' : '#71717a';
+				octx.strokeStyle = currentLayout ? '#22c55e' : '#71717a';
 				octx.lineWidth = 3;
 				octx.beginPath();
 				for (const c of det.corners) {
-					const px = c.x / scale;
-					const py = c.y / scale;
-					octx.lineTo(px, py);
+					octx.lineTo(c.x / scale, c.y / scale);
 				}
 				octx.closePath();
 				octx.stroke();
@@ -109,59 +117,65 @@
 				octx.font = '16px monospace';
 				octx.fillText(String(det.id), det.center.x / scale - 8, det.center.y / scale - 12);
 
-				if (!layout) continue;
+				if (!currentLayout) continue;
 				const marker = getMarkerById(det.id);
 				if (!marker) continue;
 				markers.push({
 					id: det.id,
-					proj: markerCenterPx(marker, layout.width, layout.height, layout.margin),
+					proj: markerCenterPx(
+						marker,
+						currentLayout.width,
+						currentLayout.height,
+						currentLayout.margin
+					),
 					cam: detectionToCameraPoint(det, scale)
 				});
 			}
 
+			matchedCount = markers.length;
 			onDetections?.(markers.length, locked);
 
-			if (!layout) return;
+			if (!currentLayout) {
+				stableCount = 0;
+				lastMarkerIds = [];
+				return;
+			}
 
-			if (markers.length >= MIN_MARKERS) {
+			if (markers.length >= TAG_COUNT) {
+				const ids = markers.map((m) => m.id).sort((a, b) => a - b);
 				const same =
-					lastMarkers.length === markers.length &&
-					markers.every((m) => lastMarkers.some((l) => l.id === m.id));
+					lastMarkerIds.length === ids.length && ids.every((id, i) => lastMarkerIds[i] === id);
 				stableCount = same ? stableCount + 1 : 0;
-				lastMarkers = markers;
+				lastMarkerIds = ids;
 
 				if (stableCount >= STABLE_FRAMES) {
 					const result = solveFromMarkers(markers);
 					if (result) {
 						locked = true;
-						const data: CalibrationData = {
+						onCalibrated?.({
 							homography: result.homography,
 							homographyInv: result.homographyInv,
-							projector: { width: layout.width, height: layout.height },
+							projector: { width: currentLayout.width, height: currentLayout.height },
 							markers,
 							updatedAt: Date.now(),
 							status: 'ready'
-						};
-						onCalibrated?.(data);
+						});
 					}
 				}
 			} else {
 				stableCount = 0;
-				lastMarkers = [];
+				lastMarkerIds = [];
 			}
 		}
 
 		function loop() {
-			detectFrame();
+			void detectFrame();
 			raf = requestAnimationFrame(loop);
 		}
 
-		start();
+		loop();
 
-		return () => {
-			cancelAnimationFrame(raf);
-			stream?.getTracks().forEach((t) => t.stop());
-		};
+		return () => cancelAnimationFrame(raf);
 	});
 </script>
 
@@ -171,11 +185,11 @@
 			Starting camera…
 		</div>
 	{/if}
-	{#if !loading && !sessionState.projectorLayout}
+	{#if !loading && !canCalibrate}
 		<div
 			class="absolute top-0 right-0 left-0 z-10 bg-amber-950/90 px-4 py-2 text-center text-xs text-amber-300"
 		>
-			Waiting for projector resolution — keep the calibration screen open on the projector.
+			Waiting for projector resolution — scan the QR on the calibration screen or keep it open.
 		</div>
 	{/if}
 	{#if error}
@@ -190,10 +204,16 @@
 
 	<div class="absolute right-0 bottom-0 left-0 bg-gradient-to-t from-black/80 to-transparent p-4">
 		<div class="flex items-center justify-between text-sm">
-			<span class="text-zinc-300">{detections.length} tags detected</span>
+			<span class="text-zinc-300">
+				{#if canCalibrate}
+					{matchedCount}/{TAG_COUNT} tags matched
+				{:else}
+					Scan projector QR for layout
+				{/if}
+			</span>
 			{#if locked}
 				<span class="font-medium text-emerald-400">Calibration locked</span>
-			{:else}
+			{:else if canCalibrate}
 				<span class="text-amber-400">Hold steady ({stableCount}/{STABLE_FRAMES})</span>
 			{/if}
 		</div>

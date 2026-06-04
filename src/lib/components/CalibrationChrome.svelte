@@ -92,7 +92,7 @@
 
 	{#if sessionCode && qrGutter}
 		<GutterPanel rect={qrGutter}>
-			<SessionQr sessionCode={sessionCode} size={qrSize} />
+			<SessionQr sessionCode={sessionCode} layout={{ width, height, margin }} size={qrSize} />
 		</GutterPanel>
 	{/if}
 

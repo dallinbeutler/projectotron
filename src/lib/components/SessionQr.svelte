@@ -1,29 +1,42 @@
 <script lang="ts">
 	import { cameraJoinUrl } from '$lib/joinUrl';
-	import { onMount } from 'svelte';
+	import type { ProjectorLayout } from '$lib/types';
 
 	let {
 		sessionCode,
+		layout,
 		size = 160
 	}: {
 		sessionCode: string;
+		layout?: ProjectorLayout;
 		size?: number;
 	} = $props();
 
 	let dataUrl = $state('');
-	let joinUrl = $derived(cameraJoinUrl(sessionCode));
+	const joinUrl = $derived(cameraJoinUrl(sessionCode, layout));
 
-	onMount(async () => {
-		const QRCode = await import('qrcode');
-		try {
-			dataUrl = await QRCode.toDataURL(joinUrl, {
-				margin: 1,
-				width: size,
-				color: { dark: '#000000', light: '#ffffff' }
-			});
-		} catch {
-			dataUrl = '';
-		}
+	$effect(() => {
+		const url = joinUrl;
+		const qrSize = size;
+		let cancelled = false;
+
+		(async () => {
+			const QRCode = await import('qrcode');
+			try {
+				const next = await QRCode.toDataURL(url, {
+					margin: 1,
+					width: qrSize,
+					color: { dark: '#000000', light: '#ffffff' }
+				});
+				if (!cancelled) dataUrl = next;
+			} catch {
+				if (!cancelled) dataUrl = '';
+			}
+		})();
+
+		return () => {
+			cancelled = true;
+		};
 	});
 </script>
 
