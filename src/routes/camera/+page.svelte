@@ -1,8 +1,11 @@
 <script lang="ts">
 	import { base } from '$app/paths';
+	import { page } from '$app/state';
 	import CameraView from '$lib/components/CameraView.svelte';
+	import { sessionFromSearchParams } from '$lib/joinUrl';
 	import {
 		downloadCalibration,
+		joinSession,
 		loadCalibrationFromText,
 		pushCalibration,
 		sessionState
@@ -16,9 +19,24 @@
 	let importText = $state('');
 	let importError = $state('');
 	let cameraKey = $state(0);
+	let ready = $state(false);
+	let joinError = $state('');
 
-	onMount(() => {
-		if (!sessionState.code) goto(`${base}/`);
+	onMount(async () => {
+		joinError = '';
+		const fromQr = sessionFromSearchParams(page.url.searchParams);
+		try {
+			if (fromQr) {
+				await joinSession(fromQr, 'phone');
+			} else if (!sessionState.code) {
+				goto(`${base}/`);
+				return;
+			}
+			ready = true;
+		} catch (e) {
+			joinError = e instanceof Error ? e.message : 'Failed to join session';
+			ready = true;
+		}
 	});
 
 	async function handleCalibrated(data: CalibrationData) {
@@ -61,34 +79,49 @@
 		<a href="{base}/" class="text-sm text-zinc-400 hover:text-zinc-200">← Home</a>
 	</div>
 
-	<div class="aspect-video overflow-hidden rounded-xl border border-zinc-800">
-		{#key cameraKey}
-			<CameraView onCalibrated={handleCalibrated} onDetections={handleDetections} />
-		{/key}
-	</div>
+	{#if joinError}
+		<p class="rounded-lg border border-red-900 bg-red-950/50 px-4 py-3 text-sm text-red-400">
+			{joinError}
+		</p>
+	{/if}
 
-	<div class="flex flex-wrap items-center gap-3 text-sm">
-		<span class="text-zinc-400">{markerCount} markers visible</span>
-		{#if sessionState.calibration?.status === 'ready' || locked}
-			<span class="text-emerald-400">Synced to projector</span>
-			<button
-				type="button"
-				class="rounded border border-zinc-600 px-3 py-1 hover:border-amber-500"
-				onclick={recalibrate}
-			>
-				Recalibrate
-			</button>
-			{#if sessionState.calibration}
+	{#if ready && !joinError}
+		<div class="aspect-video overflow-hidden rounded-xl border border-zinc-800">
+			{#key cameraKey}
+				<CameraView onCalibrated={handleCalibrated} onDetections={handleDetections} />
+			{/key}
+		</div>
+
+		<div class="flex flex-wrap items-center gap-3 text-sm">
+			<span class="text-zinc-400">{markerCount} markers visible</span>
+			{#if sessionState.connected}
+				<span class="text-emerald-400">Linked to projector</span>
+			{:else}
+				<span class="text-amber-400">Waiting for projector peer…</span>
+			{/if}
+			{#if sessionState.calibration?.status === 'ready' || locked}
+				<span class="text-emerald-400">Calibration synced</span>
 				<button
 					type="button"
 					class="rounded border border-zinc-600 px-3 py-1 hover:border-amber-500"
-					onclick={() => sessionState.calibration && downloadCalibration(sessionState.calibration)}
+					onclick={recalibrate}
 				>
-					Export JSON
+					Recalibrate
 				</button>
+				{#if sessionState.calibration}
+					<button
+						type="button"
+						class="rounded border border-zinc-600 px-3 py-1 hover:border-amber-500"
+						onclick={() => sessionState.calibration && downloadCalibration(sessionState.calibration)}
+					>
+						Export JSON
+					</button>
+				{/if}
 			{/if}
-		{/if}
-	</div>
+		</div>
+	{:else if !joinError}
+		<p class="text-sm text-zinc-500">Joining session…</p>
+	{/if}
 
 	<details class="rounded-lg border border-zinc-800 p-4">
 		<summary class="cursor-pointer text-sm text-zinc-400">Manual calibration import (fallback)</summary>

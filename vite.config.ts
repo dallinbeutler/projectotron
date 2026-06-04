@@ -4,9 +4,6 @@ import { sveltekit } from '@sveltejs/kit/vite';
 
 export default defineConfig({
 	plugins: [tailwindcss(), sveltekit()],
-	optimizeDeps: {
-		exclude: ['gun']
-	},
 	ssr: {
 		noExternal: ['pdfjs-dist']
 	},

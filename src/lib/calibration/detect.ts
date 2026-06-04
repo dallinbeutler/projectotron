@@ -77,17 +77,25 @@ class BrowserApriltag implements ApriltagModule {
 			detectionsJson += String.fromCharCode(strJsonView[i]);
 		}
 
-		const raw = JSON.parse(detectionsJson) as Array<{
-			id: number;
-			center?: { x: number; y: number };
-			corners?: Array<{ x: number; y: number }>;
-		}>;
+		try {
+			const raw = JSON.parse(detectionsJson) as
+				| Array<{
+						id: number;
+						center?: { x: number; y: number };
+						corners?: Array<{ x: number; y: number }>;
+				  }>
+				| { error?: string };
 
-		return raw.map((d) => ({
-			id: d.id,
-			center: d.center ?? { x: 0, y: 0 },
-			corners: d.corners ?? []
-		}));
+			if (!Array.isArray(raw)) return [];
+
+			return raw.map((d) => ({
+				id: d.id,
+				center: d.center ?? { x: 0, y: 0 },
+				corners: d.corners ?? []
+			}));
+		} catch {
+			return [];
+		}
 	}
 }
 

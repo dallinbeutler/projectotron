@@ -5,71 +5,71 @@ import {
 	generateSessionCode,
 	getStoredSession,
 	importCalibrationJson,
-	initGun,
-	pingSession,
-	publishCalibration,
-	publishFineTune,
 	storeSession,
-	subscribeCalibration,
-	subscribeFineTune,
-	subscribePresence,
-	type GunChain
+	clearStoredSession
 } from '$lib/gun/session';
+import {
+	joinSyncRoom,
+	leaveSyncRoom,
+	peerCount,
+	publishCalibrationSync,
+	publishFineTuneSync,
+	type SyncRoom
+} from '$lib/sync/room';
 
 export type AppSession = {
 	code: string;
 	role: SessionRole;
-	gun: GunChain | null;
+	syncRoom: SyncRoom | null;
 	connected: boolean;
+	peerCount: number;
 	calibration: CalibrationData | null;
 	fineTune: FineTuneSettings | null;
-	presence: Record<string, number>;
 };
 
 function createSessionState(): AppSession {
 	return {
 		code: '',
 		role: 'projector',
-		gun: null,
+		syncRoom: null,
 		connected: false,
+		peerCount: 0,
 		calibration: null,
-		fineTune: null,
-		presence: {}
+		fineTune: null
 	};
 }
 
 export const sessionState = $state<AppSession>(createSessionState());
 
-let presenceInterval: ReturnType<typeof setInterval> | null = null;
-let unsubCalibration: (() => void) | null = null;
-let unsubFineTune: (() => void) | null = null;
-let unsubPresence: (() => void) | null = null;
+function updateConnectionState(): void {
+	const count = peerCount(sessionState.syncRoom?.room ?? null);
+	sessionState.peerCount = count;
+	sessionState.connected = count > 0;
+}
 
 export async function joinSession(code: string, role: SessionRole): Promise<void> {
 	if (!browser) return;
 	await leaveSession();
 
-	const gun = await initGun();
-	sessionState.code = code.toUpperCase();
+	const normalized = code.toUpperCase();
+	const syncRoom = joinSyncRoom(normalized, {
+		onCalibration: (data) => {
+			sessionState.calibration = data;
+		},
+		onFineTune: (data) => {
+			sessionState.fineTune = data;
+		},
+		onPeerJoin: () => updateConnectionState(),
+		onPeerLeave: () => updateConnectionState()
+	});
+
+	sessionState.code = normalized;
 	sessionState.role = role;
-	sessionState.gun = gun;
-	sessionState.connected = true;
-	storeSession(code, role);
+	sessionState.syncRoom = syncRoom;
+	storeSession(normalized, role);
 
-	unsubCalibration = subscribeCalibration(gun, code, (data) => {
-		sessionState.calibration = data;
-	});
-
-	unsubFineTune = subscribeFineTune(gun, code, (data) => {
-		if (data) sessionState.fineTune = data;
-	});
-
-	unsubPresence = subscribePresence(gun, code, (roles) => {
-		sessionState.presence = roles;
-	});
-
-	pingSession(gun, code, role);
-	presenceInterval = setInterval(() => pingSession(gun, code, role), 5000);
+	// Room is active immediately; peers appear when the other device joins
+	updateConnectionState();
 }
 
 export function createAndJoin(role: SessionRole = 'projector'): Promise<void> {
@@ -78,26 +78,23 @@ export function createAndJoin(role: SessionRole = 'projector'): Promise<void> {
 }
 
 export function leaveSession(): void {
-	if (presenceInterval) clearInterval(presenceInterval);
-	presenceInterval = null;
-	unsubCalibration?.();
-	unsubFineTune?.();
-	unsubPresence?.();
-	unsubCalibration = null;
-	unsubFineTune = null;
-	unsubPresence = null;
+	leaveSyncRoom();
+	clearStoredSession();
 	Object.assign(sessionState, createSessionState());
 }
 
 export async function pushCalibration(data: CalibrationData): Promise<void> {
-	if (!sessionState.gun || !sessionState.code) return;
-	await publishCalibration(sessionState.gun, sessionState.code, data);
+	if (!sessionState.syncRoom || !sessionState.code) {
+		sessionState.calibration = data;
+		return;
+	}
+	publishCalibrationSync(data);
 	sessionState.calibration = data;
 }
 
 export async function pushFineTune(settings: FineTuneSettings): Promise<void> {
-	if (!sessionState.gun || !sessionState.code) return;
-	await publishFineTune(sessionState.gun, sessionState.code, settings);
+	if (!sessionState.syncRoom || !sessionState.code) return;
+	publishFineTuneSync(settings);
 	sessionState.fineTune = settings;
 }
 
@@ -128,3 +125,5 @@ export function loadCalibrationFromText(text: string): CalibrationData {
 export function setCalibration(data: CalibrationData): void {
 	sessionState.calibration = data;
 }
+
+export { generateSessionCode };

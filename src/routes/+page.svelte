@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { base } from '$app/paths';
 	import SessionCode from '$lib/components/SessionCode.svelte';
+	import SessionQr from '$lib/components/SessionQr.svelte';
 	import {
 		createAndJoin,
 		joinSession,
@@ -50,8 +51,8 @@
 	<section class="mb-10">
 		<h1 class="mb-2 text-3xl font-bold tracking-tight">Projector calibration for sewing patterns</h1>
 		<p class="max-w-2xl text-zinc-400">
-			Project undistorted patterns onto fabric. Pair your projector and phone with a session code, calibrate
-			with AprilTags, then reproject any image or PDF at true scale.
+			Project undistorted patterns onto fabric. On the projector, open Calibration and scan the QR code
+			with your phone to start the camera handshake — no typing required.
 		</p>
 	</section>
 
@@ -61,6 +62,12 @@
 			<SessionCode bind:code readonly={!!sessionState.code} />
 			{#if error}
 				<p class="text-sm text-red-400">{error}</p>
+			{/if}
+			{#if sessionState.code && sessionState.role === 'projector'}
+				<div class="mt-2">
+					<p class="mb-2 text-xs text-zinc-500">Show this on the projector or open Calibration — phone scans to join.</p>
+					<SessionQr sessionCode={sessionState.code} />
+				</div>
 			{/if}
 			<div class="flex flex-wrap gap-2">
 				{#if !sessionState.code}
@@ -78,7 +85,7 @@
 						disabled={joining}
 						onclick={() => handleJoin('phone')}
 					>
-						Join as phone
+						Join as phone (manual code)
 					</button>
 					<button
 						type="button"
@@ -139,7 +146,7 @@
 		<h2 class="mb-2 font-medium text-zinc-300">Quick start</h2>
 		<ol class="list-inside list-decimal space-y-1">
 			<li>On the projector: create a session and open <strong class="text-zinc-400">Calibration</strong> fullscreen.</li>
-			<li>On your phone: join the same code and open <strong class="text-zinc-400">Camera</strong>.</li>
+			<li>On your phone: scan the QR code on the calibration screen (or enter the code manually).</li>
 			<li>Point the phone at the projected tags until calibration locks.</li>
 			<li>On the projector: open <strong class="text-zinc-400">Reprojection</strong>, upload your pattern, fine-tune scale.</li>
 		</ol>

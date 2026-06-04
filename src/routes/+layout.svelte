@@ -2,13 +2,21 @@
 	import { base } from '$app/paths';
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
+	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import { restoreSession, sessionState } from '$lib/session.svelte';
 
 	let { children } = $props();
 
 	onMount(() => {
-		restoreSession();
+		// Camera page joins from QR ?session= param — skip stale session restore
+		const isCameraJoin =
+			page.url.pathname.includes('/camera') && page.url.searchParams.has('session');
+		if (!isCameraJoin) {
+			restoreSession()?.catch(() => {
+				/* ignore restore failures */
+			});
+		}
 	});
 </script>
 
@@ -26,7 +34,9 @@
 					<span class="font-mono text-zinc-300">{sessionState.code}</span>
 					<span class="rounded-full bg-zinc-800 px-2 py-0.5 capitalize">{sessionState.role}</span>
 					{#if sessionState.connected}
-						<span class="text-emerald-500">● synced</span>
+						<span class="text-emerald-500">● linked ({sessionState.peerCount} peer{sessionState.peerCount === 1 ? '' : 's'})</span>
+					{:else if sessionState.code}
+						<span class="text-amber-500">○ waiting for peer</span>
 					{:else}
 						<span class="text-zinc-600">○ offline</span>
 					{/if}

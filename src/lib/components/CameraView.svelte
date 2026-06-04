@@ -148,11 +148,6 @@
 			stream?.getTracks().forEach((t) => t.stop());
 		};
 	});
-
-	export function resetCalibration() {
-		locked = false;
-		stableCount = 0;
-	}
 </script>
 
 <div class="relative h-full w-full overflow-hidden bg-black">

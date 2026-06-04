@@ -6,6 +6,7 @@
 		tagImageUrl,
 		tagSizePx
 	} from '$lib/calibration/pattern';
+	import SessionQr from '$lib/components/SessionQr.svelte';
 
 	let {
 		sessionCode = '',
@@ -45,6 +46,12 @@
 		/>
 	{/each}
 
+	{#if sessionCode}
+		<div class="absolute top-4 right-4">
+			<SessionQr sessionCode={sessionCode} size={Math.min(200, tagSize * 2.5)} />
+		</div>
+	{/if}
+
 	<div class="absolute top-4 left-4 rounded-lg bg-zinc-900/80 px-4 py-2 font-mono text-sm text-zinc-300">
 		{#if sessionCode}
 			<span class="text-zinc-500">Session </span>{sessionCode}
@@ -52,7 +59,7 @@
 		{#if calibrated}
 			<span class="ml-3 text-emerald-400">Calibrated</span>
 		{:else}
-			<span class="ml-3 text-amber-400">Waiting for phone…</span>
+			<span class="ml-3 text-amber-400">Scan QR to connect phone…</span>
 		{/if}
 	</div>
 </div>

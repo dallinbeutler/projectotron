@@ -13,22 +13,21 @@ Three modes work together:
 | Mode | Device | Purpose |
 |------|--------|---------|
 | **Calibration** | Projector | Full-screen AprilTag `tag36h11` pattern at known positions |
-| **Camera** | Phone | Detect tags, compute homography, sync via GUN |
+| **Camera** | Phone | Detect tags, compute homography, sync via WebRTC |
 | **Reprojection** | Projector | Pre-warp image/PDF and project without distortion |
 
 ## Architecture
 
 ```
-Projector (calibration) → Phone (camera + AprilTag WASM) → GUN P2P session
-       ↓                                                      ↓
-Projector (reprojection) ← calibration JSON ←────────────────┘
+Projector (calibration + QR) → Phone scans QR → Trystero WebRTC room
+       ↓                                              ↓
+Projector (reprojection) ← calibration data ←────────┘
 ```
 
 - **Homography**: 4+ point correspondences between projector pixel space and camera space.
 - **Pre-warp**: Inverse mapping from projector quad to source image (pattern).
 - **Fine-tune**: Draggable reference rectangle with real-world dimensions, or zoom slider.
-- **Sync**: [GUN](https://github.com/amark/gun) with public relay peers; 6-character session code links devices.
-- **Fallback**: Export/import calibration JSON if relays are unavailable.
+- **Sync**: [Trystero](https://trystero.dev/) (Nostr + WebRTC); QR on calibration screen links the phone; JSON export/import fallback.
 
 ## Development
 
@@ -50,8 +49,8 @@ Set `BASE_PATH=/YourRepoName` for GitHub Pages project sites (configured in CI).
 
 ## Usage
 
-1. **Projector**: Create session → open **Calibration** fullscreen.
-2. **Phone**: Join same code → open **Camera**, point at tags until locked.
+1. **Projector**: Create session → open **Calibration** fullscreen (QR shown in corner).
+2. **Phone**: Scan QR on projector → opens **Camera**, point at tags until locked.
 3. **Projector**: Open **Reprojection**, upload pattern, adjust reference rect or zoom, go fullscreen.
 
 ## Calibration plane
@@ -64,4 +63,4 @@ Homography assumes a **planar** surface. The calibration plane should match the 
 - AprilTag WASM ([apriltag-js-standalone](https://github.com/arenaxr/apriltag-js-standalone))
 - `perspective-transform` for homography
 - `pdfjs-dist` for PDF patterns
-- GUN for P2P session sync
+- Trystero + `qrcode` for session sync and join links
