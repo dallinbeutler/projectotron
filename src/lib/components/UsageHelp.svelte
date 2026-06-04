@@ -30,21 +30,26 @@
 			</h2>
 			<ol class="list-inside list-decimal space-y-2 text-sm text-zinc-300">
 				<li>
-					Keep this calibration screen fullscreen on the projector. Toggle overlays off while the
-					phone scans tags.
+					Open this page on the projector. It goes fullscreen and records display resolution; a QR
+					code appears in the gutters.
 				</li>
-				<li>Scan the QR code (when overlays are on) to open the camera page on your phone.</li>
-				<li>Point the phone at all nine tags until calibration locks.</li>
 				<li>
-					Open
+					Scan the QR on your phone to open the camera page and join this session. The projector
+					then shows only the tag grid — use <strong class="text-zinc-200">Tag grid inset</strong> (Show
+					UI if needed) to fit corner tags to your work surface.
+				</li>
+				<li>
+					Point the phone at all nine tags until calibration locks; data syncs back to the projector.
+				</li>
+				<li>
+					On the projector, open
 					<a href="{base}/reproject/" class="text-amber-400 underline hover:text-amber-300"
 						>Reprojection</a
-					>, upload your pattern, and fine-tune scale.
+					>, upload your pattern, and adjust the reference rectangle or zoom.
 				</li>
 			</ol>
 			<p class="mt-4 text-xs text-zinc-500">
-				Hide overlays with the corner button so tags stay unobstructed. Press
-				<kbd class="rounded bg-zinc-800 px-1">?</kbd> or use Help to show this again.
+				Press <kbd class="rounded bg-zinc-800 px-1">?</kbd> or use Help to show this again.
 			</p>
 			<div class="mt-5 flex justify-end gap-2">
 				<button

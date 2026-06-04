@@ -1,5 +1,5 @@
 import { joinRoom, type MessageAction, type Room } from 'trystero';
-import type { CalibrationData, FineTuneSettings, SessionRole } from '$lib/types';
+import type { CalibrationData, FineTuneSettings, ProjectorLayout, SessionRole } from '$lib/types';
 
 const APP_ID = 'projectotron-v1';
 
@@ -7,6 +7,7 @@ export type SyncRoom = {
 	room: Room;
 	calibrationAction: MessageAction<CalibrationData>;
 	fineTuneAction: MessageAction<FineTuneSettings>;
+	layoutAction: MessageAction<ProjectorLayout>;
 	leave: () => void;
 };
 
@@ -21,6 +22,7 @@ export function joinSyncRoom(
 	handlers: {
 		onCalibration?: (data: CalibrationData) => void;
 		onFineTune?: (data: FineTuneSettings) => void;
+		onProjectorLayout?: (data: ProjectorLayout) => void;
 		onPeerJoin?: (peerId: string) => void;
 		onPeerLeave?: (peerId: string) => void;
 	}
@@ -30,6 +32,7 @@ export function joinSyncRoom(
 	const room = joinRoom({ appId: APP_ID }, code.toUpperCase());
 	const calibrationAction = room.makeAction<CalibrationData>('calibration');
 	const fineTuneAction = room.makeAction<FineTuneSettings>('fineTune');
+	const layoutAction = room.makeAction<ProjectorLayout>('layout');
 
 	calibrationAction.onMessage = (data) => {
 		if (data?.homography && data?.projector) handlers.onCalibration?.(data);
@@ -39,6 +42,12 @@ export function joinSyncRoom(
 		if (data?.rect) handlers.onFineTune?.(data);
 	};
 
+	layoutAction.onMessage = (data) => {
+		if (data?.width && data?.height && typeof data.margin === 'number') {
+			handlers.onProjectorLayout?.(data);
+		}
+	};
+
 	room.onPeerJoin = (peerId) => handlers.onPeerJoin?.(peerId);
 	room.onPeerLeave = (peerId) => handlers.onPeerLeave?.(peerId);
 
@@ -46,6 +55,7 @@ export function joinSyncRoom(
 		room,
 		calibrationAction,
 		fineTuneAction,
+		layoutAction,
 		leave: leaveSyncRoom
 	};
 
@@ -66,6 +76,10 @@ export function publishCalibrationSync(data: CalibrationData): void {
 
 export function publishFineTuneSync(settings: FineTuneSettings): void {
 	void activeRoom?.fineTuneAction.send(settings);
+}
+
+export function publishProjectorLayoutSync(layout: ProjectorLayout): void {
+	void activeRoom?.layoutAction.send(layout);
 }
 
 export function peerCount(room: Room | null): number {

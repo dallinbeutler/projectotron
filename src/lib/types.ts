@@ -25,6 +25,13 @@ export type FineTuneSettings = {
 
 export type SessionRole = 'projector' | 'phone';
 
+/** Projector display size and tag-grid inset (synced to phone for homography). */
+export type ProjectorLayout = {
+	width: number;
+	height: number;
+	margin: number;
+};
+
 export const DEFAULT_FINE_TUNE: FineTuneSettings = {
 	rect: { x: 0.1, y: 0.1, width: 0.3, height: 0.3 },
 	realWidth: 10,

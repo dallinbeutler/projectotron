@@ -41,11 +41,16 @@ export function projectorSize(): { width: number; height: number } {
 }
 
 /** Map normalized grid position to pixel center in projector space. */
-export function markerCenterPx(marker: CalibrationMarker, width: number, height: number): Point {
-	const innerW = width * (1 - 2 * CALIBRATION_MARGIN);
-	const innerH = height * (1 - 2 * CALIBRATION_MARGIN);
-	const x = width * CALIBRATION_MARGIN + marker.normCenter.x * innerW;
-	const y = height * CALIBRATION_MARGIN + marker.normCenter.y * innerH;
+export function markerCenterPx(
+	marker: CalibrationMarker,
+	width: number,
+	height: number,
+	margin = CALIBRATION_MARGIN
+): Point {
+	const innerW = width * (1 - 2 * margin);
+	const innerH = height * (1 - 2 * margin);
+	const x = width * margin + marker.normCenter.x * innerW;
+	const y = height * margin + marker.normCenter.y * innerH;
 	return { x, y };
 }
 
@@ -60,9 +65,13 @@ export function getMarkerById(id: number): CalibrationMarker | undefined {
 /** Corner marker IDs for homography (top-left, top-right, bottom-right, bottom-left). */
 export const CORNER_MARKER_IDS = [0, 2, 8, 6] as const;
 
-export function cornerProjectorPoints(width: number, height: number): Point[] {
+export function cornerProjectorPoints(
+	width: number,
+	height: number,
+	margin = CALIBRATION_MARGIN
+): Point[] {
 	return CORNER_MARKER_IDS.map((id) => {
 		const marker = getMarkerById(id)!;
-		return markerCenterPx(marker, width, height);
+		return markerCenterPx(marker, width, height, margin);
 	});
 }

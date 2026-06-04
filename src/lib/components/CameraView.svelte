@@ -5,8 +5,9 @@
 		getAprilTagDetector,
 		type AprilTagDetection
 	} from '$lib/calibration/detect';
-	import { getMarkerById, markerCenterPx, projectorSize } from '$lib/calibration/pattern';
+	import { getMarkerById, markerCenterPx } from '$lib/calibration/pattern';
 	import { solveFromMarkers } from '$lib/calibration/solve';
+	import { sessionState } from '$lib/session.svelte';
 	import type { CalibrationData, MarkerObservation } from '$lib/types';
 	import { onMount, tick } from 'svelte';
 
@@ -89,7 +90,9 @@
 			const found = detector.detect(gray, width, height);
 			detections = found;
 
-			const proj = projectorSize();
+			const layout = sessionState.projectorLayout;
+			if (!layout) return;
+
 			const markers: MarkerObservation[] = [];
 
 			for (const det of found) {
@@ -97,7 +100,7 @@
 				if (!marker) continue;
 				markers.push({
 					id: det.id,
-					proj: markerCenterPx(marker, proj.width, proj.height),
+					proj: markerCenterPx(marker, layout.width, layout.height, layout.margin),
 					cam: detectionToCameraPoint(det, scale)
 				});
 
@@ -133,7 +136,7 @@
 						const data: CalibrationData = {
 							homography: result.homography,
 							homographyInv: result.homographyInv,
-							projector: proj,
+							projector: { width: layout.width, height: layout.height },
 							markers,
 							updatedAt: Date.now(),
 							status: 'ready'
@@ -165,6 +168,10 @@
 	{#if loading}
 		<div class="absolute inset-0 flex items-center justify-center text-zinc-400">
 			Starting camera…
+		</div>
+	{:else if !sessionState.projectorLayout}
+		<div class="absolute inset-0 flex items-center justify-center p-6 text-center text-sm text-amber-400">
+			Waiting for projector resolution and tag layout…
 		</div>
 	{/if}
 	{#if error}

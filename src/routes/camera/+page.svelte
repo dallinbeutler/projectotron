@@ -75,7 +75,13 @@
 	<div class="flex items-center justify-between">
 		<div>
 			<h1 class="text-xl font-semibold">Camera calibration</h1>
-			<p class="text-sm text-zinc-500">Point at the projector calibration screen.</p>
+			<p class="text-sm text-zinc-500">
+				Point at the projector tag grid
+				{#if sessionState.code}
+					(session {sessionState.code})
+				{/if}
+				.
+			</p>
 		</div>
 		<a href="{base}/" class="text-sm text-zinc-400 hover:text-zinc-200">← Calibration</a>
 	</div>
@@ -99,6 +105,13 @@
 				<span class="text-emerald-400">Linked to projector</span>
 			{:else}
 				<span class="text-amber-400">Waiting for projector peer…</span>
+			{/if}
+			{#if sessionState.projectorLayout}
+				<span class="text-zinc-500">
+					{sessionState.projectorLayout.width}×{sessionState.projectorLayout.height}
+				</span>
+			{:else}
+				<span class="text-amber-400">Waiting for projector layout…</span>
 			{/if}
 			{#if sessionState.calibration?.status === 'ready' || locked}
 				<span class="text-emerald-400">Calibration synced</span>

@@ -23,6 +23,13 @@
 			await ensureSyncRoom();
 			helpOpen = shouldShowUsageHelpOnLoad();
 			ready = true;
+			if (typeof document !== 'undefined' && !document.fullscreenElement) {
+				try {
+					await document.documentElement.requestFullscreen();
+				} catch {
+					// Browser may block without a user gesture
+				}
+			}
 		} catch (e) {
 			bootError = e instanceof Error ? e.message : 'Failed to start session';
 			ready = true;

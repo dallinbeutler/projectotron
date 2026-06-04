@@ -8,16 +8,22 @@ import {
 
 export type Rect = { left: number; top: number; width: number; height: number };
 
-function markerRect(id: number, width: number, height: number): Rect {
+function markerRect(id: number, width: number, height: number, margin: number): Rect {
 	const marker = getMarkerById(id)!;
-	const c = markerCenterPx(marker, width, height);
+	const c = markerCenterPx(marker, width, height, margin);
 	const half = tagSizePx(width, height) / 2;
 	return { left: c.x - half, top: c.y - half, width: half * 2, height: half * 2 };
 }
 
-function horizontalGutter(idLeft: number, idRight: number, width: number, height: number): Rect {
-	const a = markerRect(idLeft, width, height);
-	const b = markerRect(idRight, width, height);
+function horizontalGutter(
+	idLeft: number,
+	idRight: number,
+	width: number,
+	height: number,
+	margin: number
+): Rect {
+	const a = markerRect(idLeft, width, height, margin);
+	const b = markerRect(idRight, width, height, margin);
 	return {
 		left: a.left + a.width,
 		top: Math.min(a.top, b.top),
@@ -26,9 +32,15 @@ function horizontalGutter(idLeft: number, idRight: number, width: number, height
 	};
 }
 
-function verticalGutter(idTop: number, idBottom: number, width: number, height: number): Rect {
-	const a = markerRect(idTop, width, height);
-	const b = markerRect(idBottom, width, height);
+function verticalGutter(
+	idTop: number,
+	idBottom: number,
+	width: number,
+	height: number,
+	margin: number
+): Rect {
+	const a = markerRect(idTop, width, height, margin);
+	const b = markerRect(idBottom, width, height, margin);
 	return {
 		left: Math.min(a.left, b.left),
 		top: a.top + a.height,
@@ -38,40 +50,49 @@ function verticalGutter(idTop: number, idBottom: number, width: number, height: 
 }
 
 /** Black-band regions between tags and margins — safe for UI overlays. */
-export function calibrationGutters(width: number, height: number) {
+export function calibrationGutters(
+	width: number,
+	height: number,
+	margin = CALIBRATION_MARGIN
+) {
 	const row0 = CALIBRATION_MARKERS.filter((m) => m.row === 0);
 	const row2 = CALIBRATION_MARKERS.filter((m) => m.row === 2);
-	const topEdge = Math.min(...row0.map((m) => markerRect(m.id, width, height).top));
-	const bottomEdge = Math.max(...row2.map((m) => markerRect(m.id, width, height).top + markerRect(m.id, width, height).height));
+	const topEdge = Math.min(...row0.map((m) => markerRect(m.id, width, height, margin).top));
+	const bottomEdge = Math.max(
+		...row2.map(
+			(m) =>
+				markerRect(m.id, width, height, margin).top + markerRect(m.id, width, height, margin).height
+		)
+	);
 
-	const marginX = width * CALIBRATION_MARGIN;
-	const marginY = height * CALIBRATION_MARGIN;
+	const marginX = width * margin;
+	const marginY = height * margin;
 
 	return {
 		/** Between tags 0 and 1 (top row). */
-		topLeft: horizontalGutter(0, 1, width, height),
+		topLeft: horizontalGutter(0, 1, width, height, margin),
 		/** Between tags 1 and 2 (top row). */
-		topRight: horizontalGutter(1, 2, width, height),
+		topRight: horizontalGutter(1, 2, width, height, margin),
 		/** Between tags 3 and 4 (middle row). */
-		midLeft: horizontalGutter(3, 4, width, height),
+		midLeft: horizontalGutter(3, 4, width, height, margin),
 		/** Between tags 4 and 5 (middle row). */
-		midRight: horizontalGutter(4, 5, width, height),
+		midRight: horizontalGutter(4, 5, width, height, margin),
 		/** Between tags 6 and 7 (bottom row). */
-		bottomLeft: horizontalGutter(6, 7, width, height),
+		bottomLeft: horizontalGutter(6, 7, width, height, margin),
 		/** Between tags 7 and 8 (bottom row). */
-		bottomRight: horizontalGutter(7, 8, width, height),
+		bottomRight: horizontalGutter(7, 8, width, height, margin),
 		/** Between tags 1 and 4 (center column). */
-		centerTop: verticalGutter(1, 4, width, height),
+		centerTop: verticalGutter(1, 4, width, height, margin),
 		/** Between tags 4 and 7 (center column). */
-		centerBottom: verticalGutter(4, 7, width, height),
+		centerBottom: verticalGutter(4, 7, width, height, margin),
 		/** Between tags 0 and 3 (left column). */
-		leftTop: verticalGutter(0, 3, width, height),
+		leftTop: verticalGutter(0, 3, width, height, margin),
 		/** Between tags 3 and 6 (left column). */
-		leftBottom: verticalGutter(3, 6, width, height),
+		leftBottom: verticalGutter(3, 6, width, height, margin),
 		/** Between tags 2 and 5 (right column). */
-		rightTop: verticalGutter(2, 5, width, height),
+		rightTop: verticalGutter(2, 5, width, height, margin),
 		/** Between tags 5 and 8 (right column). */
-		rightBottom: verticalGutter(5, 8, width, height),
+		rightBottom: verticalGutter(5, 8, width, height, margin),
 		/** Full-width strip above the top tag row. */
 		topBar: {
 			left: marginX * 0.5,
