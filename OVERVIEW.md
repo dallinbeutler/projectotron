@@ -39,7 +39,7 @@ npm run dev
 
 ## Build & deploy
 
-Static site via `@sveltejs/adapter-static`. GitHub Actions deploys to GitHub Pages on push to `main`.
+Static site via `@sveltejs/adapter-static`. GitHub Actions deploys to GitHub Pages on push to `master`.
 
 ```bash
 npm run build
