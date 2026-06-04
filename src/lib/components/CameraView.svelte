@@ -91,20 +91,10 @@
 			detections = found;
 
 			const layout = sessionState.projectorLayout;
-			if (!layout) return;
-
 			const markers: MarkerObservation[] = [];
 
 			for (const det of found) {
-				const marker = getMarkerById(det.id);
-				if (!marker) continue;
-				markers.push({
-					id: det.id,
-					proj: markerCenterPx(marker, layout.width, layout.height, layout.margin),
-					cam: detectionToCameraPoint(det, scale)
-				});
-
-				octx.strokeStyle = '#22c55e';
+				octx.strokeStyle = layout ? '#22c55e' : '#71717a';
 				octx.lineWidth = 3;
 				octx.beginPath();
 				for (const c of det.corners) {
@@ -118,9 +108,20 @@
 				octx.fillStyle = '#fbbf24';
 				octx.font = '16px monospace';
 				octx.fillText(String(det.id), det.center.x / scale - 8, det.center.y / scale - 12);
+
+				if (!layout) continue;
+				const marker = getMarkerById(det.id);
+				if (!marker) continue;
+				markers.push({
+					id: det.id,
+					proj: markerCenterPx(marker, layout.width, layout.height, layout.margin),
+					cam: detectionToCameraPoint(det, scale)
+				});
 			}
 
 			onDetections?.(markers.length, locked);
+
+			if (!layout) return;
 
 			if (markers.length >= MIN_MARKERS) {
 				const same =
@@ -166,12 +167,15 @@
 
 <div class="relative h-full w-full overflow-hidden bg-black">
 	{#if loading}
-		<div class="absolute inset-0 flex items-center justify-center text-zinc-400">
+		<div class="absolute inset-0 z-10 flex items-center justify-center bg-black text-zinc-400">
 			Starting camera…
 		</div>
-	{:else if !sessionState.projectorLayout}
-		<div class="absolute inset-0 flex items-center justify-center p-6 text-center text-sm text-amber-400">
-			Waiting for projector resolution and tag layout…
+	{/if}
+	{#if !loading && !sessionState.projectorLayout}
+		<div
+			class="absolute top-0 right-0 left-0 z-10 bg-amber-950/90 px-4 py-2 text-center text-xs text-amber-300"
+		>
+			Waiting for projector resolution — keep the calibration screen open on the projector.
 		</div>
 	{/if}
 	{#if error}

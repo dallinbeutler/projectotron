@@ -118,6 +118,11 @@ export async function ensureSyncRoom(): Promise<void> {
 		},
 		onPeerJoin: () => {
 			void refreshPeerCount();
+			// Layout is sent on mount; re-send when a peer joins (Trystero does not replay).
+			if (sessionState.role === 'projector' && sessionState.projectorLayout) {
+				const layout = sessionState.projectorLayout;
+				setTimeout(() => void publishProjectorLayout(layout), 300);
+			}
 		},
 		onPeerLeave: () => {
 			void refreshPeerCount();
@@ -173,12 +178,16 @@ export async function pushFineTune(settings: FineTuneSettings): Promise<void> {
 	sessionState.fineTune = settings;
 }
 
-export async function pushProjectorLayout(layout: ProjectorLayout): Promise<void> {
-	sessionState.projectorLayout = layout;
-	await ensureSyncRoom();
+async function publishProjectorLayout(layout: ProjectorLayout): Promise<void> {
 	if (!sessionState.syncRoom || !sessionState.code) return;
 	const { publishProjectorLayoutSync } = await getSyncModule();
 	publishProjectorLayoutSync(layout);
+}
+
+export async function pushProjectorLayout(layout: ProjectorLayout): Promise<void> {
+	sessionState.projectorLayout = layout;
+	await ensureSyncRoom();
+	await publishProjectorLayout(layout);
 }
 
 export function downloadCalibration(data: CalibrationData): void {
