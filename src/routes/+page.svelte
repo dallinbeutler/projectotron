@@ -77,7 +77,6 @@
 		calibrated={sessionState.calibration?.status === 'ready'}
 		onToggleHelp={openHelp}
 	/>
-	<UsageHelp bind:open={helpOpen} />
 {:else}
 	<div class="fixed inset-0 flex items-center justify-center bg-black text-zinc-500">
 		Starting…

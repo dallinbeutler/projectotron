@@ -31,7 +31,7 @@
 {#if isCalibrationHome}
 	{@render children()}
 {:else}
-	<div class="min-h-screen bg-zinc-950 text-zinc-100">
+	<div class="min-h-screen bg-zinc-500 text-zinc-100">
 		<header class="border-b border-zinc-800 px-4 py-3">
 			<div class="mx-auto flex max-w-4xl items-center justify-between gap-4">
 				<a href="{base}/" class="text-lg font-semibold tracking-tight text-amber-400">Projectotron</a>

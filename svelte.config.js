@@ -7,6 +7,8 @@ const config = {
 			filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 	},
 	kit: {
+		alias: {
+		},
 		adapter: adapter({
 			fallback: undefined
 		}),

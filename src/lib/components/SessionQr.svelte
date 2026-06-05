@@ -40,7 +40,7 @@
 	});
 </script>
 
-<div class="flex flex-col items-center gap-2 rounded-lg bg-white p-3 text-black shadow-lg">
+<div class="flex flex-col items-center gap-2 rounded-lg bg-gray-900 p-3 text-black shadow-xl z-50">
 	{#if dataUrl}
 		<img src={dataUrl} alt="Scan to join camera session" width={size} height={size} class="block" />
 	{:else}
@@ -50,7 +50,7 @@
 			style:height="{size}px"
 		></div>
 	{/if}
-	<p class="max-w-[180px] text-center text-[10px] leading-tight text-zinc-600">
-		Scan to open camera &amp; join session
-	</p>
 </div>
+<p class="max-w-[180px] text-center text-[10px] leading-tight ">
+	Scan to open camera &amp; join session
+</p>

@@ -1,4 +1,8 @@
 <script lang="ts">
+  // purpose of this component is, when the user wishes to adjust the pattern
+	// scale, to provide this transparent overlay to drag over a known-size
+	// reference on the pattern and enter the real-world dimensions of the reference
+	// this, when confirmed, rescales the image on the corrected projection canvas
 	import type { FineTuneSettings } from '$lib/types';
 
 	let {

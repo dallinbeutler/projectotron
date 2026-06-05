@@ -1,4 +1,9 @@
 <script lang="ts">
+// purpose of this component is to display the calibration pattern for projection
+// , fitting the tags to the furthest edge of the screen
+// the overlay is a chrome that displays the session code, the resolution, and the tags
+//TODO: the tags are not properly positioned in the furthest edges of the screen when
+// the aspect ratio of the screen intensifies
 	import {
 		CALIBRATION_MARGIN,
 		CALIBRATION_MARKERS,
@@ -32,6 +37,7 @@
 			const size = projectorSize();
 			width = size.width;
 			height = size.height;
+			console.log('width', width);
 		};
 		update();
 		window.addEventListener('resize', update);
@@ -53,7 +59,7 @@
 	const tagSize = $derived(tagSizePx(width, height));
 </script>
 
-<div class="fixed inset-0 bg-black">
+<div class="fixed inset-0 bg-black border-2 border-amber-500">
 	{#each CALIBRATION_MARKERS as marker (marker.id)}
 		{@const center = markerCenterPx(marker, width, height, margin)}
 		<TagMarker
@@ -71,6 +77,5 @@
 		{height}
 		bind:margin
 		bind:showOverlays
-		{onToggleHelp}
 	/>
 </div>

@@ -5,7 +5,7 @@ import { base } from '$app/paths';
 export const CALIBRATION_MARGIN = 0.08;
 
 /** Tag edge length as a fraction of the shorter viewport side. */
-export const TAG_SIZE_FRACTION = 0.12;
+export const TAG_SIZE_FRACTION = 0.18;
 
 export type CalibrationMarker = {
 	id: number;
