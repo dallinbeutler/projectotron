@@ -73,8 +73,8 @@
 	<CalibrationChrome
 		{sessionCode}
 		{calibrated}
-		{width}
-		{height}
+		bind:width
+		bind:height
 		bind:margin
 		bind:showOverlays
 	/>

@@ -9,12 +9,16 @@
 
 	const MIN_MARGIN = 0.04;
 	const MAX_MARGIN = 0.2;
+	const MIN_HEIGHT = 500;
+	const MAX_HEIGHT = 3000;
+	const MIN_WIDTH = 800;
+	const MAX_WIDTH = 5000;
 	let helpOpen = $state(true);
 	let {
 		sessionCode = '',
 		calibrated = false,
-		width = 1920,
-		height = 1080,
+		width = $bindable(1920),
+		height = $bindable(1080),
 		margin = $bindable(0.08),
 		showOverlays = $bindable(true),
 	}: {
@@ -29,30 +33,42 @@
 	const apriltagSize = $derived(Math.min(160, Math.floor(160 + 60 )));
 
 </script>
-  {#if !showOverlays && sessionState.connected }
-		<div class="rounded-lg bg-purple-900 px-3 py-2 text-xs text-zinc-300 shadow-lg">
-			<p class="mb-1 font-medium text-amber-400">Tag grid inset</p>
-			<p class="mb-2 text-[10px] leading-snug text-zinc-500">
-				Adjust so corner tags sit on your work surface edges.
-			</p>
-			<input
-				type="range"
-				min={MIN_MARGIN}
-				max={MAX_MARGIN}
-				step="0.005"
-				bind:value={margin}
-				class="w-full accent-amber-500"
-				aria-label="Tag grid margin"
-			/>
-		</div>
-  {/if}
-
 	<Dialog.Root bind:open={showOverlays}>
-		<Dialog.Trigger type="button" class="rounded-lg bg-zinc-950/90 m-50 px-8 py-1.5 text-zinc-400 hover:border-amber-500 hover:text-amber-300 border-1 border-amber-500">
+		<Dialog.Trigger type="button" class="rounded-lg text-zinc-200 m-50 px-8 py-1.5  hover:border-amber-500 hover:text-amber-300 border-1 border-amber-500">
       toggle ui
 		</Dialog.Trigger>
 	  <Dialog.Content>
-
+			
+			<div class="rounded-lg px-3 py-2 text-xs shadow-lg">
+				<p class="mb-1 font-medium text-amber-400">Tag grid inset</p>
+				<p class="mb-2 text-[10px] leading-snug">
+					Adjust so corner tags sit on your work surface edges.
+				</p>
+				<p>
+					margin
+				</p>
+				<input
+					type="range"
+					min={MIN_MARGIN}
+					max={MAX_MARGIN}
+					step="0.005"
+					bind:value={margin}
+					class="w-full accent-amber-500"
+					aria-label="Tag grid margin"
+				/>
+				<p >
+					aspect ratio adjustment
+				</p>
+				<input
+					type="range"
+					min={MIN_HEIGHT}
+					max={MAX_HEIGHT}
+					step="1"
+					bind:value={height}
+					class="w-full accent-amber-500"
+					aria-label="Tag grid height"
+				/>
+			</div>
 			<div class="rounded-lg p-1 font-mono">
 				<span class="text-zinc-500">Session </span>{sessionCode}
 				<span class="mt-1 block text-zinc-400">{width}×{height}</span>
@@ -82,7 +98,7 @@
 				{/if}
 			</div>
 			<!-- {#if sessionCode } -->
-			<SessionQr sessionCode={sessionCode} layout={{ width, height, margin }} size={apriltagSize * 4} />
+			<SessionQr sessionCode={sessionCode} layout={{ width, height, margin }} size={apriltagSize * 2} />
 		
 			<!-- {/if} -->
 		</Dialog.Content>
