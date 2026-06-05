@@ -1,0 +1,9 @@
+---
+alwaysApply: true
+---
+## TypeScript ##
+- Prefer **TypeScript** for new logic: Oven (`oven/bake`, `oven/vite`, `oven/svelte`, `oven/scripts`), meal `dish/` configs (`svelte.config.ts`, `vite.config.ts`, `site.config.ts`), and `src/lib/**/*.ts`.
+- Svelte components stay `.svelte`; use `lang="ts"` in `<script>` blocks.
+- Use strict typing; avoid `any` unless bridging untyped legacy code.
+
+

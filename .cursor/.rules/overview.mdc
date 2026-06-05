@@ -1,0 +1,8 @@
+---
+alwaysApply: true
+---
+
+consult CONTEXT-MAP.md for project structure.  Use TypeScript per `typescript.mdc`.
+
+do not `import { base } from '$app/paths';` use resolve(...) instead.
+
