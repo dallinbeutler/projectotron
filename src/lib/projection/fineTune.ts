@@ -11,7 +11,8 @@ export function computeFineTuneScale(
 	if (rectPxWidth <= 0 || settings.realWidth <= 0) return settings.zoom;
 	const pixelsPerUnit = rectPxWidth / settings.realWidth;
 	const baseScale = 1 / pixelsPerUnit;
-	return baseScale * settings.zoom;
+	// Lower zoom value → larger on fabric; pairs with inverted slider (right = zoom in).
+	return baseScale / settings.zoom;
 }
 
 export function applyFineTuneToPoint(p: Point, settings: FineTuneSettings, sourceSize: Point): Point {

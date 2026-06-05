@@ -19,6 +19,7 @@
 	import { goto } from '$app/navigation';
 
 	let sourceCanvas = $state<HTMLCanvasElement | null>(null);
+	let sourcePreviewEl = $state<HTMLCanvasElement | null>(null);
 	let outputCanvas = $state<HTMLCanvasElement | null>(null);
 	let fineTune = $state<FineTuneSettings>({ ...DEFAULT_FINE_TUNE });
 	let fullscreen = $state(false);
@@ -29,6 +30,10 @@
 	let importText = $state('');
 	let showControls = $state(true);
 
+	const sourceAspect = $derived(
+		sourceCanvas && sourceCanvas.height > 0 ? sourceCanvas.width / sourceCanvas.height : 4 / 3
+	);
+
 	onMount(() => {
 		if (!sessionState.code) {
 			goto(`${base}/`);
@@ -37,6 +42,16 @@
 		void ensureSyncRoom();
 		if (sessionState.fineTune) fineTune = { ...sessionState.fineTune };
 	});
+
+	function syncSourcePreview() {
+		if (!sourceCanvas || !sourcePreviewEl) return;
+		sourcePreviewEl.width = sourceCanvas.width;
+		sourcePreviewEl.height = sourceCanvas.height;
+		const ctx = sourcePreviewEl.getContext('2d');
+		if (!ctx) return;
+		ctx.clearRect(0, 0, sourcePreviewEl.width, sourcePreviewEl.height);
+		ctx.drawImage(sourceCanvas, 0, 0);
+	}
 
 	async function handleFile(file: File, type: 'image' | 'pdf') {
 		loading = true;
@@ -50,6 +65,7 @@
 				pdfPages = 1;
 				sourceCanvas = await loadImageFile(file);
 			}
+			syncSourcePreview();
 			renderOutput();
 		} finally {
 			loading = false;
@@ -61,6 +77,7 @@
 		loading = true;
 		try {
 			sourceCanvas = await renderPdfPage(currentFile, pdfPage);
+			syncSourcePreview();
 			renderOutput();
 		} finally {
 			loading = false;
@@ -88,6 +105,7 @@
 		fineTune;
 		sourceCanvas;
 		sessionState.calibration;
+		syncSourcePreview();
 		renderOutput();
 	});
 
@@ -141,12 +159,34 @@
 			<a href="{base}/" class="mt-6 inline-block text-sm text-zinc-500 hover:text-zinc-300">← Calibration</a>
 		</div>
 	{:else}
-		<div class="relative flex-1 bg-black">
-			<canvas bind:this={outputCanvas} class="h-full w-full"></canvas>
+		<div class="relative flex min-h-0 flex-1 bg-black">
+			<canvas bind:this={outputCanvas} class="absolute inset-0 h-full w-full"></canvas>
+
+			{#if showControls && sourceCanvas}
+				<div
+					class="absolute inset-0 z-10 flex items-center justify-center p-4"
+					style:pointer-events="none"
+				>
+					<div
+						class="relative max-h-full max-w-full shadow-2xl"
+						style:aspect-ratio={sourceAspect}
+						style:width={`min(100%, calc((100vh - 120px) * ${sourceAspect}))`}
+						style:pointer-events="auto"
+					>
+						<canvas
+							bind:this={sourcePreviewEl}
+							class="block h-full w-full rounded-lg border border-zinc-700 bg-zinc-900"
+						></canvas>
+						<div class="absolute inset-0 rounded-lg">
+							<FineTuneRect bind:settings={fineTune} showFields={false} fill />
+						</div>
+					</div>
+				</div>
+			{/if}
 
 			{#if showControls}
 				<aside
-					class="absolute top-4 right-4 w-72 max-h-[calc(100vh-120px)] overflow-y-auto rounded-xl border border-zinc-700 bg-zinc-950/95 p-4 shadow-xl"
+					class="absolute top-4 right-4 z-20 w-72 max-h-[calc(100vh-120px)] overflow-y-auto rounded-xl border border-zinc-700 bg-zinc-950/95 p-4 shadow-xl"
 				>
 					<h1 class="mb-3 text-lg font-semibold">Reprojection</h1>
 
@@ -170,9 +210,15 @@
 						<p class="mt-2 text-xs text-amber-400">Loading…</p>
 					{/if}
 
+					{#if sourceCanvas}
+						<p class="mt-3 text-xs text-zinc-500">
+							Drag the amber rectangle on your pattern (center). Enter its real-world size below.
+						</p>
+					{/if}
+
 					<div class="mt-4 border-t border-zinc-800 pt-4">
 						<h2 class="mb-2 text-sm font-medium text-zinc-300">Fine-tune</h2>
-						<FineTuneRect bind:settings={fineTune} />
+						<FineTuneRect bind:settings={fineTune} showPreview={false} />
 						<div class="mt-3">
 							<ZoomSlider bind:zoom={fineTune.zoom} />
 						</div>
@@ -199,7 +245,7 @@
 			{:else}
 				<button
 					type="button"
-					class="absolute top-4 right-4 rounded bg-zinc-900/80 px-3 py-1 text-xs text-zinc-400"
+					class="absolute top-4 right-4 z-20 rounded bg-zinc-900/80 px-3 py-1 text-xs text-zinc-400"
 					onclick={toggleFullscreen}
 				>
 					Show controls

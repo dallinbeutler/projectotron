@@ -10,16 +10,27 @@
 		max?: number;
 		step?: number;
 	} = $props();
+
+	/** Slider position is inverted so dragging right zooms in. */
+	let sliderValue = $derived(max + min - (zoom ?? 1));
+
+	function onSliderInput(e: Event) {
+		const raw = Number((e.currentTarget as HTMLInputElement).value);
+		zoom = max + min - raw;
+	}
 </script>
 
 <label class="flex flex-col gap-2">
-	<span class="text-xs text-zinc-400">Fine zoom ({zoom.toFixed(3)}×)</span>
+	<span class="text-xs text-zinc-400">
+		Fine zoom ({(1 / zoom).toFixed(3)}× on fabric)
+	</span>
 	<input
 		type="range"
 		{min}
 		{max}
 		{step}
-		bind:value={zoom}
+		value={sliderValue}
+		oninput={onSliderInput}
 		class="w-full accent-amber-500"
 	/>
 </label>

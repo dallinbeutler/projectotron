@@ -3,10 +3,16 @@
 
 	let {
 		settings = $bindable(),
+		showPreview = true,
+		showFields = true,
+		fill = false,
 		previewWidth = 400,
 		previewHeight = 300
 	}: {
 		settings: FineTuneSettings;
+		showPreview?: boolean;
+		showFields?: boolean;
+		fill?: boolean;
 		previewWidth?: number;
 		previewHeight?: number;
 	} = $props();
@@ -63,75 +69,83 @@
 </script>
 
 <div class="flex flex-col gap-3">
-	<p class="text-xs text-zinc-500">
-		Drag the rectangle over a known-size reference on your pattern, then enter its real dimensions.
-	</p>
-	<div
-		data-preview
-		role="application"
-		aria-label="Reference rectangle preview"
-		class="relative overflow-hidden rounded-lg border border-zinc-700 bg-zinc-900"
-		style:width="{previewWidth}px"
-		style:height="{previewHeight}px"
-		onpointermove={onPointerMove}
-		onpointerup={onPointerUp}
-	>
+	{#if showPreview}
+		{#if showFields}
+			<p class="text-xs text-zinc-500">
+				Drag the rectangle over a known-size reference on your pattern, then enter its real dimensions.
+			</p>
+		{/if}
 		<div
-			class="absolute border-2 border-amber-400 bg-amber-400/10"
-			style:left="{settings.rect.x * 100}%"
-			style:top="{settings.rect.y * 100}%"
-			style:width="{settings.rect.width * 100}%"
-			style:height="{settings.rect.height * 100}%"
+			data-preview
+			role="application"
+			aria-label="Reference rectangle on pattern"
+			class="relative overflow-hidden rounded-lg border border-zinc-700 bg-zinc-900 {fill
+				? 'h-full w-full'
+				: ''}"
+			style:width={fill ? undefined : `${previewWidth}px`}
+			style:height={fill ? undefined : `${previewHeight}px`}
+			onpointermove={onPointerMove}
+			onpointerup={onPointerUp}
 		>
-			<button
-				type="button"
-				class="absolute inset-0 cursor-move"
-				aria-label="Move reference rectangle"
-				onpointerdown={(e) => onPointerDown(e, 'move')}
-			></button>
-			<button
-				type="button"
-				class="absolute right-0 bottom-0 h-4 w-4 cursor-se-resize rounded-sm bg-amber-400"
-				aria-label="Resize reference rectangle"
-				onpointerdown={(e) => {
-					e.stopPropagation();
-					onPointerDown(e, 'resize-se');
-				}}
-			></button>
+			<div
+				class="absolute border-2 border-amber-400 bg-amber-400/10"
+				style:left="{settings.rect.x * 100}%"
+				style:top="{settings.rect.y * 100}%"
+				style:width="{settings.rect.width * 100}%"
+				style:height="{settings.rect.height * 100}%"
+			>
+				<button
+					type="button"
+					class="absolute inset-0 cursor-move"
+					aria-label="Move reference rectangle"
+					onpointerdown={(e) => onPointerDown(e, 'move')}
+				></button>
+				<button
+					type="button"
+					class="absolute right-0 bottom-0 h-4 w-4 cursor-se-resize rounded-sm bg-amber-400"
+					aria-label="Resize reference rectangle"
+					onpointerdown={(e) => {
+						e.stopPropagation();
+						onPointerDown(e, 'resize-se');
+					}}
+				></button>
+			</div>
 		</div>
-	</div>
+	{/if}
 
-	<div class="grid grid-cols-2 gap-3">
-		<label class="flex flex-col gap-1 text-xs text-zinc-400">
-			Width
-			<input
-				type="number"
-				min="0.1"
-				step="0.1"
-				class="rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-zinc-100"
-				bind:value={settings.realWidth}
-			/>
-		</label>
-		<label class="flex flex-col gap-1 text-xs text-zinc-400">
-			Height
-			<input
-				type="number"
-				min="0.1"
-				step="0.1"
-				class="rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-zinc-100"
-				bind:value={settings.realHeight}
-			/>
-		</label>
-	</div>
+	{#if showFields}
+		<div class="grid grid-cols-2 gap-3">
+			<label class="flex flex-col gap-1 text-xs text-zinc-400">
+				Width
+				<input
+					type="number"
+					min="0.1"
+					step="0.1"
+					class="rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-zinc-100"
+					bind:value={settings.realWidth}
+				/>
+			</label>
+			<label class="flex flex-col gap-1 text-xs text-zinc-400">
+				Height
+				<input
+					type="number"
+					min="0.1"
+					step="0.1"
+					class="rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-zinc-100"
+					bind:value={settings.realHeight}
+				/>
+			</label>
+		</div>
 
-	<label class="flex flex-col gap-1 text-xs text-zinc-400">
-		Unit
-		<select
-			class="rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-zinc-100"
-			bind:value={settings.unit}
-		>
-			<option value="in">inches</option>
-			<option value="cm">cm</option>
-		</select>
-	</label>
+		<label class="flex flex-col gap-1 text-xs text-zinc-400">
+			Unit
+			<select
+				class="rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-zinc-100"
+				bind:value={settings.unit}
+			>
+				<option value="in">inches</option>
+				<option value="cm">cm</option>
+			</select>
+		</label>
+	{/if}
 </div>
