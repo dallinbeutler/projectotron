@@ -46,9 +46,8 @@
 		}
 	}
 
-	function handleDetections(count: number, isLocked: boolean) {
+	function handleDetections(count: number) {
 		markerCount = count;
-		locked = isLocked;
 	}
 
 	function recalibrate() {

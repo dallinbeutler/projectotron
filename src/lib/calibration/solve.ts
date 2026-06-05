@@ -4,6 +4,7 @@ import {
 	invertHomography,
 	type HomographyCoeffs
 } from '$lib/calibration/homography';
+import { CORNER_MARKER_IDS } from '$lib/calibration/pattern';
 import type { MarkerObservation, Point } from '$lib/types';
 
 export type HomographyResult = {
@@ -30,11 +31,22 @@ export function solveHomography(
 	};
 }
 
+/** Prefer quad corner markers (0, 2, 8, 6); fall back to any four matches. */
 export function solveFromMarkers(markers: MarkerObservation[]): HomographyResult | null {
+	const byId = new Map(markers.map((m) => [m.id, m]));
+	const corners = CORNER_MARKER_IDS.map((id) => byId.get(id)).filter(
+		(m): m is MarkerObservation => m !== undefined
+	);
+	if (corners.length === 4) {
+		return solveHomography(
+			corners.map((m) => m.proj),
+			corners.map((m) => m.cam)
+		);
+	}
 	if (markers.length < 4) return null;
 	return solveHomography(
-		markers.map((m) => m.proj),
-		markers.map((m) => m.cam)
+		markers.slice(0, 4).map((m) => m.proj),
+		markers.slice(0, 4).map((m) => m.cam)
 	);
 }
 

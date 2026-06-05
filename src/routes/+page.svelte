@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { base } from '$app/paths';
+	import { goto } from '$app/navigation';
 	import CalibrationPattern from '$lib/components/CalibrationPattern.svelte';
 	import UsageHelp from '$lib/components/UsageHelp.svelte';
 	import { shouldShowUsageHelpOnLoad } from '$lib/usageHelp';
@@ -39,6 +41,16 @@
 	function openHelp() {
 		helpOpen = true;
 	}
+
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		if (
+			sessionState.role === 'projector' &&
+			sessionState.calibration?.status === 'ready'
+		) {
+			void goto(`${base}/reproject/`);
+		}
+	});
 
 	$effect(() => {
 		if (typeof window === 'undefined') return;

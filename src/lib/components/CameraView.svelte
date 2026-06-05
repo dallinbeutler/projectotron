@@ -5,6 +5,7 @@
 		getAprilTagDetector,
 		type AprilTagDetection
 	} from '$lib/calibration/detect';
+	import { allCalibrationTagsMatched, uniqueCalibrationMarkers } from '$lib/calibration/match';
 	import { CALIBRATION_MARKERS, getMarkerById, markerCenterPx } from '$lib/calibration/pattern';
 	import { solveFromMarkers } from '$lib/calibration/solve';
 	import { sessionState } from '$lib/session.svelte';
@@ -16,7 +17,7 @@
 		onDetections
 	}: {
 		onCalibrated?: (data: CalibrationData) => void;
-		onDetections?: (count: number, locked: boolean) => void;
+		onDetections?: (count: number) => void;
 	} = $props();
 
 	const TAG_COUNT = CALIBRATION_MARKERS.length;
@@ -26,11 +27,14 @@
 	let overlayEl: HTMLCanvasElement | undefined = $state();
 	let loading = $state(true);
 	let error = $state('');
+	let solveError = $state('');
 	let matchedCount = $state(0);
 	let locked = $state(false);
 	let stableCount = $state(0);
+	let submitting = $state(false);
 
 	const canCalibrate = $derived(!!sessionState.projectorLayout);
+	const steadyDisplay = $derived(Math.min(stableCount, STABLE_FRAMES));
 
 	onMount(() => {
 		let stream: MediaStream | null = null;
@@ -79,7 +83,7 @@
 		let lastMarkerIds: number[] = [];
 
 		async function detectFrame() {
-			if (!videoEl || !overlayEl || locked) return;
+			if (!videoEl || !overlayEl || locked || submitting) return;
 			const now = performance.now();
 			if (now - lastDetect < 120) return;
 			lastDetect = now;
@@ -101,7 +105,7 @@
 			const found: AprilTagDetection[] = detector.detect(gray, width, height);
 
 			const currentLayout = sessionState.projectorLayout;
-			const markers: MarkerObservation[] = [];
+			const rawMarkers: MarkerObservation[] = [];
 
 			for (const det of found) {
 				octx.strokeStyle = currentLayout ? '#22c55e' : '#71717a';
@@ -120,7 +124,7 @@
 				if (!currentLayout) continue;
 				const marker = getMarkerById(det.id);
 				if (!marker) continue;
-				markers.push({
+				rawMarkers.push({
 					id: det.id,
 					proj: markerCenterPx(
 						marker,
@@ -132,8 +136,9 @@
 				});
 			}
 
+			const markers = uniqueCalibrationMarkers(rawMarkers);
 			matchedCount = markers.length;
-			onDetections?.(markers.length, locked);
+			onDetections?.(markers.length);
 
 			if (!currentLayout) {
 				stableCount = 0;
@@ -141,17 +146,20 @@
 				return;
 			}
 
-			if (markers.length >= TAG_COUNT) {
+			if (allCalibrationTagsMatched(markers)) {
 				const ids = markers.map((m) => m.id).sort((a, b) => a - b);
 				const same =
 					lastMarkerIds.length === ids.length && ids.every((id, i) => lastMarkerIds[i] === id);
 				stableCount = same ? stableCount + 1 : 0;
 				lastMarkerIds = ids;
+				solveError = '';
 
 				if (stableCount >= STABLE_FRAMES) {
+					submitting = true;
 					const result = solveFromMarkers(markers);
 					if (result) {
 						locked = true;
+						stableCount = STABLE_FRAMES;
 						onCalibrated?.({
 							homography: result.homography,
 							homographyInv: result.homographyInv,
@@ -160,7 +168,12 @@
 							updatedAt: Date.now(),
 							status: 'ready'
 						});
+					} else {
+						solveError = 'Could not compute homography — hold all corner tags in view.';
+						stableCount = 0;
+						lastMarkerIds = [];
 					}
+					submitting = false;
 				}
 			} else {
 				stableCount = 0;
@@ -192,6 +205,13 @@
 			Waiting for projector resolution — scan the QR on the calibration screen or keep it open.
 		</div>
 	{/if}
+	{#if solveError}
+		<div
+			class="absolute top-0 right-0 left-0 z-10 bg-red-950/90 px-4 py-2 text-center text-xs text-red-300"
+		>
+			{solveError}
+		</div>
+	{/if}
 	{#if error}
 		<div class="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center">
 			<p class="text-red-400">{error}</p>
@@ -213,8 +233,10 @@
 			</span>
 			{#if locked}
 				<span class="font-medium text-emerald-400">Calibration locked</span>
+			{:else if submitting}
+				<span class="text-amber-400">Syncing…</span>
 			{:else if canCalibrate}
-				<span class="text-amber-400">Hold steady ({stableCount}/{STABLE_FRAMES})</span>
+				<span class="text-amber-400">Hold steady ({steadyDisplay}/{STABLE_FRAMES})</span>
 			{/if}
 		</div>
 	</div>
